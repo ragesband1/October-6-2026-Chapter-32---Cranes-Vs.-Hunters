@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 32 - Cranes Vs. Hunters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            overflow: hidden;
+            background: #06110a;
+            color: #e2f1e7;
+        }
+        
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(12, 35, 20, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a6f47;
+            border-radius: 3px;
+        }
+        
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(10, 28, 17, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(74, 222, 128, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-panel-gold {
+            background: rgba(28, 24, 10, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-nature {
+            background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+            box-shadow: 0 4px 14px rgba(21, 128, 61, 0.4);
+            transition: all 0.2s ease;
+        }
+        .btn-nature:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(21, 128, 61, 0.6);
+            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        }
+
+        /* Damage float numbers */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.3); }
+        }
+        .dmg-text {
+            position: absolute;
+            animation: floatUp 0.8s ease-out forwards;
+            font-weight: 800;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Radar pulse */
+        @keyframes radarSweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .radar-sweep {
+            animation: radarSweep 4s linear infinite;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative bg-black text-white">
+
+    <div id="canvas-container" class="w-full h-full absolute inset-0 z-0"></div>
+
+    <div id="story-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="glass-panel-gold max-w-3xl w-full max-h-[90vh] rounded-2xl p-6 md:p-8 flex flex-col justify-between overflow-hidden border-2 border-amber-500/40">
+            <div>
+                <div class="text-center mb-4">
+                    <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">March 20, 2020 • Official Adaptation</span>
+                    <h1 class="text-3xl md:text-5xl font-extrabold font-cinzel text-amber-300 drop-shadow-md mt-1">
+                        Chapter 32: Cranes Vs. Hunters
+                    </h1>
+                    <p class="text-xs md:text-sm text-emerald-300 mt-1">Written by Edgar Allan Walker And "The Rages Band"</p>
+                </div>
+
+                <div class="space-y-3 text-sm md:text-base text-gray-200 overflow-y-auto max-h-[42vh] p-4 bg-black/40 rounded-xl border border-emerald-900/50 leading-relaxed">
+                    <p class="font-semibold text-amber-200">
+                        <i class="fa-solid font-bold fa-book-open mr-2 text-amber-400"></i>Backstory:
+                    </p>
+                    <p>
+                        Once upon a time, deep in the jungle of the birds, lived a flock of whooping cranes. For 30 years they thrived in harmony, laying their precious eggs atop high tree canopy nests.
+                    </p>
+                    <p>
+                        However, cruel strangers known as <strong>Hunters</strong> invaded the forest. They ruthlessly targeted young cranes—whose soft skin is delicate pink before growing into snow-white adult plumage—and stole unhatched eggs.
+                    </p>
+                    <p>
+                        Filled with sorrow and courage, the adult cranes formed an alliance with good human conservationists at the <strong>Orphanage Cage Sanctuary</strong>. Now, as a Guardian Crane, you must fly into the jungle, rescue pink chicks, retrieve stolen eggs, and call down the Authorities to put the hunters behind bars forever!
+                    </p>
+                    <div class="p-3 bg-amber-950/60 rounded-lg border border-amber-500/30 text-amber-200 text-xs md:text-sm italic">
+                        <strong>Moral Lesson:</strong> Respect and care for our animal nature. Save the animals to protect our world so no creature's domain is destroyed.
+                    </div>
+                </div>
+
+                <!-- Class Selection -->
+                <div class="mt-4">
+                    <label class="block text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Choose Your Crane Guardian Class:</label>
+                    <div class="grid grid-cols-3 gap-2 md:gap-4" id="class-selector">
+                        <button onclick="selectClass('wind')" id="btn-class-wind" class="class-btn p-3 rounded-xl border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-800/50 text-left transition text-xs md:text-sm">
+                            <div class="font-bold text-emerald-300"><i class="fa-solid fa-wind mr-1"></i> Wind Glide</div>
+                            <div class="text-[10px] text-gray-300">High Speed & Energy</div>
+                        </button>
+                        <button onclick="selectClass('iron')" id="btn-class-iron" class="class-btn p-3 rounded-xl border border-amber-500/50 bg-amber-950/40 hover:bg-amber-800/50 text-left transition text-xs md:text-sm">
+                            <div class="font-bold text-amber-300"><i class="fa-solid fa-shield-halved mr-1"></i> Iron Beak</div>
+                            <div class="text-[10px] text-gray-300">+25% Defense & HP</div>
+                        </button>
+                        <button onclick="selectClass('siren')" id="btn-class-siren" class="class-btn p-3 rounded-xl border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-800/50 text-left transition text-xs md:text-sm">
+                            <div class="font-bold text-cyan-300"><i class="fa-solid fa-bullhorn mr-1"></i> Siren Call</div>
+                            <div class="text-[10px] text-gray-300">Fast Ranger Summons</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="startGame()" class="btn-nature w-full py-3.5 rounded-xl font-extrabold text-lg tracking-wide text-white uppercase flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Begin Protection Mission
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-hud" class="hidden absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4">
+        
+        <!-- Top Navigation & Stats Bar -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <!-- Player Stats -->
+            <div class="glass-panel p-3.5 rounded-2xl w-64 md:w-80 space-y-2 border border-emerald-500/30">
+                <div class="flex justify-between items-center">
+                    <span id="hud-class-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-700/60 text-emerald-200">Wind Glide</span>
+                    <span class="text-sm font-black text-amber-300">LVL <span id="hud-level">1</span></span>
+                </div>
+                <!-- HP Bar -->
+                <div>
+                    <div class="flex justify-between text-xs text-emerald-200 font-semibold mb-0.5">
+                        <span><i class="fa-solid fa-heart text-red-500 mr-1"></i> Health</span>
+                        <span id="hud-hp-text">100 / 100</span>
+                    </div>
+                    <div class="w-full h-3 bg-gray-900/80 rounded-full overflow-hidden p-0.5 border border-red-900/50">
+                        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-emerald-500 rounded-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Stamina Bar -->
+                <div>
+                    <div class="flex justify-between text-xs text-cyan-200 font-semibold mb-0.5">
+                        <span><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i> Energy</span>
+                        <span id="hud-stamina-text">100 / 100</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-900/80 rounded-full overflow-hidden p-0.5 border border-cyan-900/50">
+                        <div id="hud-stamina-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- XP Bar -->
+                <div>
+                    <div class="flex justify-between text-[10px] text-amber-300 font-semibold mb-0.5">
+                        <span>XP Progress</span>
+                        <span id="hud-xp-text">0 / 100</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-900/80 rounded-full overflow-hidden">
+                        <div id="hud-xp-bar" class="h-full bg-amber-400 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons Menu -->
+            <div class="flex gap-2">
+                <button onclick="toggleModal('quest-modal')" class="glass-panel hover:bg-emerald-800/40 text-emerald-300 p-3 rounded-xl border border-emerald-500/40 flex items-center gap-2 text-xs font-bold">
+                    <i class="fa-solid fa-scroll text-amber-400 text-base"></i> Quests
+                </button>
+                <button onclick="toggleModal('inventory-modal')" class="glass-panel hover:bg-emerald-800/40 text-emerald-300 p-3 rounded-xl border border-emerald-500/40 flex items-center gap-2 text-xs font-bold">
+                    <i class="fa-solid fa-bag-shopping text-cyan-400 text-base"></i> Inventory
+                </button>
+                <button onclick="toggleModal('skills-modal')" class="glass-panel hover:bg-emerald-800/40 text-emerald-300 p-3 rounded-xl border border-emerald-500/40 flex items-center gap-2 text-xs font-bold">
+                    <i class="fa-solid fa-feather-pointed text-yellow-400 text-base"></i> Skills
+                </button>
+            </div>
+
+            <!-- Mini Map -->
+            <div class="glass-panel p-2 rounded-2xl relative w-32 h-32 md:w-36 md:h-36 overflow-hidden border border-emerald-500/40 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border border-emerald-500/20 radar-sweep pointer-events-none"></div>
+                <canvas id="minimap-canvas" width="140" height="140" class="rounded-xl"></canvas>
+            </div>
+        </div>
+
+        <!-- Center Dynamic Quest Tracker Overlay -->
+        <div class="self-start pointer-events-auto mt-2 glass-panel p-3 rounded-xl max-w-xs border border-amber-500/30">
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-compass"></i> Current Objective
+            </h4>
+            <p id="tracker-text" class="text-xs text-gray-200 mt-1 font-medium">Find and rescue 3 pink crane chicks hidden in hunter camps.</p>
+        </div>
+
+        <!-- Bottom Controls & Action Bar -->
+        <div class="flex justify-between items-end pointer-events-auto">
+            <!-- On Screen Key Help / Touch Controls -->
+            <div class="hidden md:flex gap-2 glass-panel p-2 rounded-xl text-[11px] text-emerald-200/80">
+                <span class="bg-emerald-950/80 px-2 py-1 rounded border border-emerald-700/50">WASD: Move</span>
+                <span class="bg-emerald-950/80 px-2 py-1 rounded border border-emerald-700/50">SPACE: Fly/Jump</span>
+                <span class="bg-emerald-950/80 px-2 py-1 rounded border border-emerald-700/50">L-Click / J: Wing Peck</span>
+                <span class="bg-emerald-950/80 px-2 py-1 rounded border border-emerald-700/50">R-Click / K: Ranger Call</span>
+                <span class="bg-emerald-950/80 px-2 py-1 rounded border border-emerald-700/50">E: Rescue / Interact</span>
+            </div>
+
+            <!-- Mobile Touch Joystick & Action Buttons -->
+            <div class="flex w-full justify-between items-end md:hidden">
+                <div id="joystick-zone" class="w-28 h-28 glass-panel rounded-full relative flex items-center justify-center border-2 border-emerald-500/40">
+                    <div id="joystick-knob" class="w-10 h-10 bg-emerald-500/60 rounded-full absolute"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-mobile-attack" class="w-14 h-14 rounded-full bg-red-600/80 text-white font-bold flex items-center justify-center border border-red-400">
+                        <i class="fa-solid fa-hand-fist text-xl"></i>
+                    </button>
+                    <button id="btn-mobile-call" class="w-14 h-14 rounded-full bg-cyan-600/80 text-white font-bold flex items-center justify-center border border-cyan-400">
+                        <i class="fa-solid fa-bullhorn text-xl"></i>
+                    </button>
+                    <button id="btn-mobile-interact" class="w-14 h-14 rounded-full bg-amber-600/80 text-white font-bold flex items-center justify-center border border-amber-400">
+                        <i class="fa-solid fa-hand text-xl"></i>
+                    </button>
+                    <button id="btn-mobile-jump" class="w-14 h-14 rounded-full bg-emerald-600/80 text-white font-bold flex items-center justify-center border border-emerald-400">
+                        <i class="fa-solid fa-angles-up text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quests Modal -->
+    <div id="quest-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm pointer-events-auto">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-5 border border-emerald-500/40">
+            <div class="flex justify-between items-center border-b border-emerald-800/60 pb-3">
+                <h3 class="text-lg font-bold text-amber-300 font-cinzel"><i class="fa-solid fa-scroll mr-2"></i> Jungle Protection Quests</h3>
+                <button onclick="toggleModal('quest-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-3 mt-4 text-xs md:text-sm" id="quest-list">
+                <!-- Quests generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory & Equipment Modal -->
+    <div id="inventory-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm pointer-events-auto">
+        <div class="glass-panel max-w-lg w-full rounded-2xl p-5 border border-cyan-500/40">
+            <div class="flex justify-between items-center border-b border-cyan-800/60 pb-3">
+                <h3 class="text-lg font-bold text-cyan-300 font-cinzel"><i class="fa-solid fa-bag-shopping mr-2"></i> Inventory & Gear</h3>
+                <button onclick="toggleModal('inventory-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <h4 class="text-xs font-bold text-gray-300 uppercase mb-2">Equipment</h4>
+                    <div class="space-y-2">
+                        <div class="p-2.5 rounded-xl bg-black/40 border border-emerald-500/30 flex items-center gap-2">
+                            <i class="fa-solid fa-crown text-amber-400 text-lg"></i>
+                            <div>
+                                <div class="text-xs font-bold text-amber-200">Beak Armor</div>
+                                <div class="text-[10px] text-gray-400">+15 Attack Damage</div>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-black/40 border border-emerald-500/30 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-cat text-cyan-400 text-lg"></i>
+                            <div>
+                                <div class="text-xs font-bold text-cyan-200">Wing Feather Guards</div>
+                                <div class="text-[10px] text-gray-400">+20% Flight Stamina</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-gray-300 uppercase mb-2">Collected Items</h4>
+                    <div class="grid grid-cols-2 gap-2" id="inventory-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Tree Modal -->
+    <div id="skills-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm pointer-events-auto">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-5 border border-yellow-500/40">
+            <div class="flex justify-between items-center border-b border-yellow-800/60 pb-3">
+                <h3 class="text-lg font-bold text-yellow-300 font-cinzel"><i class="fa-solid fa-feather-pointed mr-2"></i> Crane Skill Tree</h3>
+                <button onclick="toggleModal('skills-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-3 mt-4" id="skills-list">
+                <!-- Skills populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div id="victory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg">
+        <div class="glass-panel-gold max-w-xl w-full rounded-2xl p-6 md:p-8 text-center border-2 border-amber-400 animate-pulse">
+            <i class="fa-solid fa-trophy text-5xl text-amber-400 mb-3"></i>
+            <h2 class="text-3xl font-extrabold font-cinzel text-amber-300">VICTORY FOR THE JUNGLE!</h2>
+            <p class="text-emerald-300 text-sm mt-1">Hunters Captured & Crane Sanctuary Restored!</p>
+            
+            <div class="my-6 p-4 bg-black/60 rounded-xl text-left text-xs md:text-sm text-gray-200 space-y-2 border border-emerald-500/30">
+                <p>
+                    <i class="fa-solid fa-check text-emerald-400 mr-2"></i>Human authorities arrested Master Hunter Sterling and all poachers.
+                </p>
+                <p>
+                    <i class="fa-solid fa-check text-emerald-400 mr-2"></i>All pink chicks and stolen eggs are safe at the Orphanage Sanctuary.
+                </p>
+                <p class="italic text-amber-200 border-t border-amber-500/20 pt-2 mt-2">
+                    "For the next 2 years, no hunters invaded the jungle. The news echoed across the land, guaranteeing animal freedom. The cranes lived peacefully in their healthy green domain."
+                </p>
+            </div>
+
+            <button onclick="location.reload()" class="btn-nature w-full py-3 rounded-xl font-bold uppercase text-white tracking-wide">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* Web Audio API Synthesizer for retro dynamic SFX */
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'peck') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'cry') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(900, now + 0.2);
+                osc.frequency.linearRampToValueAtTime(500, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'pickup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'hit') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+    </script>
+
+    <script>
+        // Game State Engine
+        const gameState = {
+            started: false,
+            playerClass: 'wind',
+            level: 1,
+            xp: 0,
+            xpMax: 100,
+            hp: 100,
+            hpMax: 100,
+            stamina: 100,
+            staminaMax: 100,
+            atkPower: 25,
+            speed: 0.22,
+            stolenEggsCollected: 0,
+            pinkChicksRescued: 0,
+            huntersArrested: 0,
+            bossDefeated: false,
+            inventory: ['Healing Herb x2', 'Feather of Swiftness'],
+            skills: [
+                { id: 'feather_storm', name: 'Feather Storm', learned: false, cost: 1, desc: 'Area wing blast damaging all surrounding poachers.' },
+                { id: 'screech', name: 'Guardian Screech', learned: false, cost: 1, desc: 'Stuns hunters for 3 seconds.' },
+                { id: 'healing_breeze', name: 'Healing Breeze', learned: true, cost: 0, desc: 'Regenerates 20 HP over time.' }
+            ],
+            skillPoints: 1,
+            quests: [
+                { id: 1, title: 'Save the Pink Chicks', req: 3, cur: 0, desc: 'Locate 3 lost pink baby chicks in hunter territory.', done: false },
+                { id: 2, title: 'Retrieve Stolen Eggs', req: 5, cur: 0, desc: 'Gather 5 stolen crane eggs from poacher camps.', done: false },
+                { id: 3, title: 'Apprehend Hunter Boss', req: 1, cur: 0, desc: 'Defeat Sterling & summon Human Authorities to arrest him.', done: false }
+            ]
+        };
+
+        // Class Selection Logic
+        function selectClass(className) {
+            gameState.playerClass = className;
+            document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-amber-400'));
+            document.getElementById('btn-class-' + className).classList.add('ring-2', 'ring-amber-400');
+            
+            if (className === 'iron') {
+                gameState.hpMax = 130;
+                gameState.hp = 130;
+                gameState.atkPower = 32;
+            } else if (className === 'wind') {
+                gameState.speed = 0.28;
+                gameState.staminaMax = 130;
+            } else if (className === 'siren') {
+                gameState.atkPower = 22;
+            }
+        }
+        selectClass('wind');
+
+        function toggleModal(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        }
+
+        // Three.js Scene Setup
+        let scene, camera, renderer;
+        let playerMesh, wingLeft, wingRight;
+        let keys = {};
+        const entities = {
+            trees: [],
+            eggs: [],
+            chicks: [],
+            hunters: [],
+            authorities: [],
+            sanctuary: null,
+            boss: null
+        };
+
+        function init3DWorld() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c2415);
+            scene.fog = new THREE.FogExp2(0x0c2415, 0.015);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xdcfce7, 0.6);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfef08a, 1.2);
+            sunLight.position.set(50, 80, 30);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            scene.add(sunLight);
+
+            // Ground - Jungle Grass
+            const groundGeo = new THREE.PlaneGeometry(250, 250);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.9 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // River Water Strip
+            const riverGeo = new THREE.PlaneGeometry(30, 250);
+            const riverMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.8 });
+            const river = new THREE.Mesh(riverGeo, riverMat);
+            river.rotation.x = -Math.PI / 2;
+            river.position.set(20, 0.1, 0);
+            scene.add(river);
+
+            // Build Player Crane Model
+            buildPlayerCrane();
+
+            // Populate World
+            createJungleEnvironment();
+            createOrphanageSanctuary();
+            spawnEggsAndChicks();
+            spawnHuntersAndBoss();
+            spawnHumanAuthorities();
+
+            // Window Resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildPlayerCrane() {
+            const playerGroup = new THREE.Group();
+
+            // Body
+            const bodyGeo = new THREE.ConeGeometry(0.6, 2, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI / 3;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            // Neck & Head
+            const neckGeo = new THREE.CylinderGeometry(0.12, 0.2, 1.5, 8);
+            const neckMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9 });
+            const neck = new THREE.Mesh(neckGeo, neckMat);
+            neck.position.set(0, 0.9, 0.7);
+            neck.rotation.x = -Math.PI / 6;
+            playerGroup.add(neck);
+
+            const headGeo = new THREE.SphereGeometry(0.25, 8, 8);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xd97706 }); // Red top crown
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.set(0, 1.6, 1.0);
+            playerGroup.add(head);
+
+            // Beak
+            const beakGeo = new THREE.ConeGeometry(0.08, 0.8, 6);
+            const beakMat = new THREE.MeshStandardMaterial({ color: 0xca8a04 });
+            const beak = new THREE.Mesh(beakGeo, beakMat);
+            beak.rotation.x = Math.PI / 2;
+            beak.position.set(0, 1.55, 1.5);
+            playerGroup.add(beak);
+
+            // Wings
+            const wingGeo = new THREE.BoxGeometry(1.8, 0.05, 0.8);
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0 });
+
+            wingLeft = new THREE.Mesh(wingGeo, wingMat);
+            wingLeft.position.set(-1, 0.2, 0);
+            playerGroup.add(wingLeft);
+
+            wingRight = new THREE.Mesh(wingGeo, wingMat);
+            wingRight.position.set(1, 0.2, 0);
+            playerGroup.add(wingRight);
+
+            playerMesh = playerGroup;
+            playerMesh.position.set(0, 1, 80);
+            scene.add(playerMesh);
+        }
+
+        function createTree(x, z) {
+            const treeGroup = new THREE.Group();
+            
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 4, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
+            const foliageGeo = new THREE.DodecahedronGeometry(2);
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+            const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+            foliage.position.y = 4.5;
+            foliage.castShadow = true;
+            treeGroup.add(foliage);
+
+            treeGroup.position.set(x, 0, z);
+            scene.add(treeGroup);
+            entities.trees.push(treeGroup);
+        }
+
+        function createJungleEnvironment() {
+            // Random Trees around the map
+            for (let i = 0; i < 90; i++) {
+                const x = (Math.random() - 0.5) * 220;
+                const z = (Math.random() - 0.5) * 220;
+                if (Math.abs(x - 20) > 8 && (Math.abs(x) > 15 || Math.abs(z - 80) > 15)) {
+                    createTree(x, z);
+                }
+            }
+        }
+
+        function createOrphanageSanctuary() {
+            // Orphanage Cage Sanctuary Area
+            const cageGroup = new THREE.Group();
+            
+            const baseGeo = new THREE.BoxGeometry(16, 0.4, 16);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            cageGroup.add(base);
+
+            // Fence Poles
+            for (let i = -7; i <= 7; i += 3.5) {
+                const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 3);
+                const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+                
+                const p1 = new THREE.Mesh(poleGeo, poleMat); p1.position.set(i, 1.5, -7); cageGroup.add(p1);
+                const p2 = new THREE.Mesh(poleGeo, poleMat); p2.position.set(i, 1.5, 7); cageGroup.add(p2);
+                const p3 = new THREE.Mesh(poleGeo, poleMat); p3.position.set(-7, 1.5, i); cageGroup.add(p3);
+                const p4 = new THREE.Mesh(poleGeo, poleMat); p4.position.set(7, 1.5, i); cageGroup.add(p4);
+            }
+
+            cageGroup.position.set(0, 0.2, 80);
+            scene.add(cageGroup);
+            entities.sanctuary = cageGroup;
+        }
+
+        function spawnEggsAndChicks() {
+            // Eggs (Glowing spheres)
+            const eggGeo = new THREE.SphereGeometry(0.35, 12, 12);
+            const eggMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xca8a04, emissiveIntensity: 0.6 });
+
+            for (let i = 0; i < 5; i++) {
+                const egg = new THREE.Mesh(eggGeo, eggMat);
+                egg.position.set((Math.random() - 0.5) * 160, 0.35, (Math.random() - 0.5) * 160);
+                scene.add(egg);
+                entities.eggs.push(egg);
+            }
+
+            // Pink Chicks (Baby Crane with pink skin)
+            for (let i = 0; i < 3; i++) {
+                const chickGroup = new THREE.Group();
+                const chickBody = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.4, 8, 8),
+                    new THREE.MeshStandardMaterial({ color: 0xf472b6 }) // Pink skin tone chick
+                );
+                chickBody.position.y = 0.4;
+                chickGroup.add(chickBody);
+
+                chickGroup.position.set((Math.random() - 0.5) * 150, 0, (Math.random() - 0.5) * 150);
+                scene.add(chickGroup);
+                entities.chicks.push(chickGroup);
+            }
+        }
+
+        function createHunterMesh(isBoss = false) {
+            const hunterGroup = new THREE.Group();
+            
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.6, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: isBoss ? 0x7f1d1d : 0x78350f });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.8;
+            hunterGroup.add(body);
+
+            const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.8;
+            hunterGroup.add(head);
+
+            // Rifle
+            const rifleGeo = new THREE.BoxGeometry(0.1, 0.1, 1.2);
+            const rifleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            const rifle = new THREE.Mesh(rifleGeo, rifleMat);
+            rifle.position.set(0.4, 1.1, 0.3);
+            hunterGroup.add(rifle);
+
+            return hunterGroup;
+        }
+
+        function spawnHuntersAndBoss() {
+            // Poachers
+            for (let i = 0; i < 6; i++) {
+                const hunter = createHunterMesh(false);
+                hunter.position.set((Math.random() - 0.5) * 160, 0, (Math.random() - 0.5) * 160);
+                hunter.userData = { hp: 50, maxHp: 50, atk: 8, stunned: 0 };
+                scene.add(hunter);
+                entities.hunters.push(hunter);
+            }
+
+            // Boss - Master Hunter Sterling
+            const boss = createHunterMesh(true);
+            boss.scale.set(1.5, 1.5, 1.5);
+            boss.position.set(-30, 0, -40);
+            boss.userData = { hp: 200, maxHp: 200, atk: 18, isBoss: true, stunned: 0 };
+            scene.add(boss);
+            entities.boss = boss;
+            entities.hunters.push(boss);
+        }
+
+        function spawnHumanAuthorities() {
+            // Good Wardens at Sanctuary
+            for (let i = 0; i < 3; i++) {
+                const wardenGroup = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.4, 1.6),
+                    new THREE.MeshStandardMaterial({ color: 0x0284c7 }) // Blue uniform
+                );
+                body.position.y = 0.8;
+                wardenGroup.add(body);
+
+                wardenGroup.position.set(-4 + i * 4, 0, 76);
+                scene.add(wardenGroup);
+                entities.authorities.push(wardenGroup);
+            }
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', e => {
+                keys[e.code] = true;
+                if (e.code === 'KeyJ') attackPeck();
+                if (e.code === 'KeyK') callAuthorities();
+                if (e.code === 'KeyE') interactNearby();
+            });
+
+            window.addEventListener('keyup', e => {
+                keys[e.code] = false;
+            });
+
+            window.addEventListener('mousedown', e => {
+                if (e.button === 0) attackPeck();
+                if (e.button === 2) callAuthorities();
+            });
+            window.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Mobile Buttons
+            document.getElementById('btn-mobile-attack')?.addEventListener('click', attackPeck);
+            document.getElementById('btn-mobile-call')?.addEventListener('click', callAuthorities);
+            document.getElementById('btn-mobile-interact')?.addEventListener('click', interactNearby);
+            document.getElementById('btn-mobile-jump')?.addEventListener('click', () => { keys['Space'] = true; setTimeout(() => keys['Space'] = false, 300); });
+        }
+
+        function attackPeck() {
+            initAudio();
+            playSound('peck');
+
+            // Flap animation
+            wingLeft.rotation.z = Math.PI / 4;
+            wingRight.rotation.z = -Math.PI / 4;
+            setTimeout(() => {
+                wingLeft.rotation.z = 0;
+                wingRight.rotation.z = 0;
+            }, 150);
+
+            // Check hit hunters
+            entities.hunters.forEach(h => {
+                if (h.parent && h.position.distanceTo(playerMesh.position) < 3.5) {
+                    const dmg = gameState.atkPower;
+                    h.userData.hp -= dmg;
+                    showDamageText(dmg, h.position);
+                    playSound('hit');
+
+                    if (h.userData.hp <= 0) {
+                        scene.remove(h);
+                        gameState.xp += 35;
+                        if (h.userData.isBoss) {
+                            gameState.bossDefeated = true;
+                            updateQuest(3, 1);
+                        }
+                        checkLevelUp();
+                    }
+                }
+            });
+        }
+
+        function callAuthorities() {
+            initAudio();
+            playSound('cry');
+
+            // Alarm screech alerts nearby rangers
+            entities.authorities.forEach(auth => {
+                auth.position.x += (playerMesh.position.x - auth.position.x) * 0.2;
+                auth.position.z += (playerMesh.position.z - auth.position.z) * 0.2;
+            });
+
+            // Stun nearby hunters
+            entities.hunters.forEach(h => {
+                if (h.position.distanceTo(playerMesh.position) < 8) {
+                    h.userData.stunned = 120; // 2 seconds
+                }
+            });
+        }
+
+        function interactNearby() {
+            initAudio();
+            // Collect Eggs
+            entities.eggs.forEach((egg, idx) => {
+                if (egg.parent && egg.position.distanceTo(playerMesh.position) < 2.5) {
+                    scene.remove(egg);
+                    playSound('pickup');
+                    gameState.stolenEggsCollected++;
+                    updateQuest(2, 1);
+                }
+            });
+
+            // Rescue Pink Chicks
+            entities.chicks.forEach((chick, idx) => {
+                if (chick.parent && chick.position.distanceTo(playerMesh.position) < 2.5) {
+                    scene.remove(chick);
+                    playSound('pickup');
+                    gameState.pinkChicksRescued++;
+                    updateQuest(1, 1);
+                }
+            });
+        }
+
+        function showDamageText(val, pos) {
+            const el = document.createElement('div');
+            el.className = 'dmg-text text-red-400 text-lg';
+            el.innerText = '-' + val;
+            el.style.left = (window.innerWidth / 2) + 'px';
+            el.style.top = (window.innerHeight / 2 - 20) + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function updateQuest(id, count) {
+            const q = gameState.quests.find(item => item.id === id);
+            if (q && !q.done) {
+                q.cur += count;
+                if (q.cur >= q.req) {
+                    q.cur = q.req;
+                    q.done = true;
+                }
+            }
+            renderQuests();
+            checkVictory();
+        }
+
+        function checkLevelUp() {
+            if (gameState.xp >= gameState.xpMax) {
+                gameState.level++;
+                gameState.xp -= gameState.xpMax;
+                gameState.xpMax = Math.floor(gameState.xpMax * 1.5);
+                gameState.hpMax += 20;
+                gameState.hp = gameState.hpMax;
+                gameState.atkPower += 5;
+                gameState.skillPoints++;
+                renderSkills();
+            }
+            updateHUD();
+        }
+
+        function checkVictory() {
+            const allDone = gameState.quests.every(q => q.done);
+            if (allDone) {
+                document.getElementById('victory-modal').classList.remove('hidden');
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-level').innerText = gameState.level;
+            document.getElementById('hud-hp-text').innerText = `${Math.max(0, Math.round(gameState.hp))} / ${gameState.hpMax}`;
+            document.getElementById('hud-hp-bar').style.width = `${(gameState.hp / gameState.hpMax) * 100}%`;
+            
+            document.getElementById('hud-stamina-text').innerText = `${Math.round(gameState.stamina)} / ${gameState.staminaMax}`;
+            document.getElementById('hud-stamina-bar').style.width = `${(gameState.stamina / gameState.staminaMax) * 100}%`;
+
+            document.getElementById('hud-xp-text').innerText = `${gameState.xp} / ${gameState.xpMax}`;
+            document.getElementById('hud-xp-bar').style.width = `${(gameState.xp / gameState.xpMax) * 100}%`;
+
+            // Active Quest Text
+            const active = gameState.quests.find(q => !q.done) || gameState.quests[2];
+            document.getElementById('tracker-text').innerText = `${active.title}: ${active.cur}/${active.req} (${active.desc})`;
+        }
+
+        function renderQuests() {
+            const container = document.getElementById('quest-list');
+            container.innerHTML = gameState.quests.map(q => `
+                <div class="p-3 rounded-xl ${q.done ? 'bg-emerald-950/60 border-emerald-500/50' : 'bg-black/40 border-gray-700'} border">
+                    <div class="flex justify-between font-bold text-emerald-200">
+                        <span>${q.title}</span>
+                        <span class="${q.done ? 'text-amber-400' : 'text-gray-400'}">${q.cur}/${q.req}</span>
+                    </div>
+                    <p class="text-[11px] text-gray-300 mt-1">${q.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderSkills() {
+            const container = document.getElementById('skills-list');
+            container.innerHTML = gameState.skills.map(s => `
+                <div class="p-3 rounded-xl bg-black/40 border border-yellow-500/30 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-amber-200 text-xs">${s.name}</div>
+                        <div class="text-[10px] text-gray-300">${s.desc}</div>
+                    </div>
+                    <button ${s.learned || gameState.skillPoints < s.cost ? 'disabled' : ''} onclick="learnSkill('${s.id}')" 
+                        class="px-3 py-1 rounded text-xs font-bold ${s.learned ? 'bg-gray-700 text-gray-400' : 'bg-amber-600 hover:bg-amber-500 text-white'}">
+                        ${s.learned ? 'Unlocked' : 'Learn (1 SP)'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function learnSkill(id) {
+            const sk = gameState.skills.find(s => s.id === id);
+            if (sk && !sk.learned && gameState.skillPoints >= sk.cost) {
+                sk.learned = true;
+                gameState.skillPoints -= sk.cost;
+                renderSkills();
+            }
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = `
+                <div class="p-2 rounded bg-black/50 border border-emerald-500/20 text-center">
+                    <i class="fa-solid fa-egg text-amber-300 text-lg"></i>
+                    <div class="text-[10px] text-amber-200 font-bold mt-1">Eggs: ${gameState.stolenEggsCollected}</div>
+                </div>
+                <div class="p-2 rounded bg-black/50 border border-emerald-500/20 text-center">
+                    <i class="fa-solid fa-kiwi-bird text-pink-400 text-lg"></i>
+                    <div class="text-[10px] text-pink-200 font-bold mt-1">Chicks: ${gameState.pinkChicksRescued}</div>
+                </div>
+            `;
+        }
+
+        function drawMinimap() {
+            const cvs = document.getElementById('minimap-canvas');
+            const ctx = cvs.getContext('2d');
+            ctx.clearRect(0, 0, 140, 140);
+
+            // Background
+            ctx.fillStyle = '#0a2313';
+            ctx.fillRect(0, 0, 140, 140);
+
+            const mapScale = 0.5;
+            const cx = 70;
+            const cy = 70;
+
+            // Player Dot
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eggs (Yellow dots)
+            ctx.fillStyle = '#eab308';
+            entities.eggs.forEach(e => {
+                if (e.parent) {
+                    const dx = (e.position.x - playerMesh.position.x) * mapScale + cx;
+                    const dy = (e.position.z - playerMesh.position.z) * mapScale + cy;
+                    if (dx > 0 && dx < 140 && dy > 0 && dy < 140) {
+                        ctx.beginPath(); ctx.arc(dx, dy, 2.5, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+            });
+
+            // Hunters (Red dots)
+            ctx.fillStyle = '#ef4444';
+            entities.hunters.forEach(h => {
+                if (h.parent) {
+                    const dx = (h.position.x - playerMesh.position.x) * mapScale + cx;
+                    const dy = (h.position.z - playerMesh.position.z) * mapScale + cy;
+                    if (dx > 0 && dx < 140 && dy > 0 && dy < 140) {
+                        ctx.beginPath(); ctx.arc(dx, dy, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+            });
+        }
+
+        function updateGameLoop() {
+            if (!gameState.started) return;
+
+            // Movement Logic
+            let moveX = 0;
+            let moveZ = 0;
+
+            if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+            if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+            if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+
+            if (moveX !== 0 || moveZ !== 0) {
+                const angle = Math.atan2(moveX, moveZ);
+                playerMesh.rotation.y = angle;
+
+                playerMesh.position.x += Math.sin(angle) * gameState.speed;
+                playerMesh.position.z += Math.cos(angle) * gameState.speed;
+
+                // Wing flapping animation
+                wingLeft.rotation.z = Math.sin(Date.now() * 0.01) * 0.3;
+                wingRight.rotation.z = -Math.sin(Date.now() * 0.01) * 0.3;
+            }
+
+            // Jump / Flying logic
+            if (keys['Space'] && gameState.stamina > 5) {
+                if (playerMesh.position.y < 8) playerMesh.position.y += 0.2;
+                gameState.stamina -= 0.4;
+            } else {
+                if (playerMesh.position.y > 1) playerMesh.position.y -= 0.15;
+                if (gameState.stamina < gameState.staminaMax) gameState.stamina += 0.2;
+            }
+
+            // Camera third-person follow
+            camera.position.x = playerMesh.position.x;
+            camera.position.y = playerMesh.position.y + 8;
+            camera.position.z = playerMesh.position.z + 16;
+            camera.lookAt(playerMesh.position);
+
+            // Hunter AI Movement & Attack
+            entities.hunters.forEach(h => {
+                if (h.parent) {
+                    if (h.userData.stunned > 0) {
+                        h.userData.stunned--;
+                        return;
+                    }
+                    const dist = h.position.distanceTo(playerMesh.position);
+                    if (dist < 18 && dist > 2) {
+                        h.lookAt(playerMesh.position);
+                        h.position.x += (playerMesh.position.x - h.position.x) * 0.02;
+                        h.position.z += (playerMesh.position.z - h.position.z) * 0.02;
+                    }
+
+                    // Attack Player
+                    if (dist <= 2.5) {
+                        gameState.hp -= h.userData.atk * 0.05;
+                        if (gameState.hp <= 0) {
+                            gameState.hp = 0;
+                            // Reset position on defeat
+                            playerMesh.position.set(0, 1, 80);
+                            gameState.hp = gameState.hpMax;
+                        }
+                    }
+                }
+            });
+
+            updateHUD();
+            drawMinimap();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateGameLoop();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function startGame() {
+            document.getElementById('story-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            
+            init3DWorld();
+            setupInputListeners();
+            renderQuests();
+            renderSkills();
+            renderInventory();
+            
+            gameState.started = true;
+            animate();
+        }
+    </script>
+</body>
+</html>
